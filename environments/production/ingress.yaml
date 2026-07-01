@@ -1,0 +1,67 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: student-management-ingress
+  namespace: production
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  tls:
+  - hosts:
+    - students.myuniversity.edu
+    secretName: student-sys-tls
+  rules:
+  - host: students.myuniversity.edu
+    http:
+      paths:
+      - path: /api/students
+        pathType: Prefix
+        backend:
+          service:
+            name: student-service
+            port:
+              number: 80
+      - path: /api/courses
+        pathType: Prefix
+        backend:
+          service:
+            name: course-service
+            port:
+              number: 80
+      - path: /api/enrollments
+        pathType: Prefix
+        backend:
+          service:
+            name: enrollment-service
+            port:
+              number: 80
+      - path: /api/billing
+        pathType: Prefix
+        backend:
+          service:
+            name: billing-service
+            port:
+              number: 80
+      - path: /api/notifications
+        pathType: Prefix
+        backend:
+          service:
+            name: notification-service
+            port:
+              number: 80
+      - path: /api/auth
+        pathType: Prefix
+        backend:
+          service:
+            name: auth-service
+            port:
+              number: 80
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: student-frontend
+            port:
+              number: 80
