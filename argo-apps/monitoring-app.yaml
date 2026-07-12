@@ -37,16 +37,20 @@ spec:
           config:
             global:
               resolve_timeout: 5m
+              smtp_smarthost: 'smtp.gmail.com:587'
+              smtp_from: 'sachinthadaham66@gmail.com'
+              smtp_auth_username: 'sachinthadaham66@gmail.com'
+              smtp_auth_password: '<YOUR_GMAIL_APP_PASSWORD>'
             route:
               group_by: ['job']
               group_wait: 30s
               group_interval: 5m
               repeat_interval: 12h
-              receiver: 'discord-webhook'
+              receiver: 'email-alert'
             receivers:
-            - name: 'discord-webhook'
-              slack_configs:
-              - api_url: 'https://discord.com/api/webhooks/dummy/dummy'
+            - name: 'email-alert'
+              email_configs:
+              - to: 'sachinthadaham66@gmail.com'
                 send_resolved: true
         additionalPrometheusRulesMap:
           rule-name:
