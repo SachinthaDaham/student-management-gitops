@@ -1,0 +1,15 @@
+{{- range $serviceName, $serviceData := .Values.services }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $serviceName }}
+spec:
+  selector:
+    app: {{ $serviceName }}
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: {{ $serviceData.port }}
+  type: ClusterIP
+{{- end }}

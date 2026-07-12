@@ -1,94 +1,131 @@
 provider "aws" {
-  region = "us-east-1"
+  region = "eu-north-1"
 }
 
-resource "aws_vpc" "main_vpc" {
-  cidr_block           = "10.0.0.0/16"
-  enable_dns_support   = true
+data "aws_availability_zones" "available" {}
+
+locals {
+  name   = "student-mgmt"
+  vpc_cidr = "10.0.0.0/16"
+  # Use first 2 available AZs in eu-north-1
+  azs      = slice(data.aws_availability_zones.available.names, 0, 2)
+}
+
+module "vpc" {
+  source  = "terraform-aws-modules/vpc/aws"
+  version = "~> 5.0"
+
+  name = "${local.name}-vpc"
+  cidr = local.vpc_cidr
+
+  azs              = local.azs
+  private_subnets  = [for k, v in local.azs : cidrsubnet(local.vpc_cidr, 8, k)]
+  public_subnets   = [for k, v in local.azs : cidrsubnet(local.vpc_cidr, 8, k + 4)]
+  database_subnets = [for k, v in local.azs : cidrsubnet(local.vpc_cidr, 8, k + 8)]
+
+  enable_nat_gateway   = true
+  single_nat_gateway   = true
   enable_dns_hostnames = true
-  tags = { Name = "student-sys-vpc" }
-}
 
-resource "aws_subnet" "public_subnet" {
-  vpc_id                  = aws_vpc.main_vpc.id
-  cidr_block              = "10.0.1.0/24"
-  map_public_ip_on_launch = true
-  availability_zone       = "us-east-1a"
-  tags = { Name = "student-sys-public-subnet" }
-}
+  create_database_subnet_group       = true
+  create_database_subnet_route_table = true
 
-resource "aws_internet_gateway" "gw" {
-  vpc_id = aws_vpc.main_vpc.id
-  tags = { Name = "student-sys-igw" }
-}
-
-resource "aws_route_table" "public_rt" {
-  vpc_id = aws_vpc.main_vpc.id
-  route {
-    cidr_block = "0.0.0.0/0"
-    gateway_id = aws_internet_gateway.gw.id
+  public_subnet_tags = {
+    "kubernetes.io/role/elb" = 1
+  }
+  private_subnet_tags = {
+    "kubernetes.io/role/internal-elb" = 1
   }
 }
 
-resource "aws_route_table_association" "public_rta" {
-  subnet_id      = aws_subnet.public_subnet.id
-  route_table_id = aws_route_table.public_rt.id
+module "eks" {
+  source  = "terraform-aws-modules/eks/aws"
+  version = "~> 20.0"
+
+  cluster_name    = "${local.name}-cluster"
+  cluster_version = "1.30"
+
+  cluster_endpoint_public_access  = true
+
+  vpc_id                   = module.vpc.vpc_id
+  subnet_ids               = module.vpc.private_subnets
+  control_plane_subnet_ids = module.vpc.private_subnets
+
+  eks_managed_node_groups = {
+    app_nodes = {
+      min_size     = 1
+      max_size     = 2
+      desired_size = 1
+
+      # Free tier eligible instance type in eu-north-1
+      instance_types = ["t3.micro"]
+    }
+  }
+
+  enable_cluster_creator_admin_permissions = true
 }
 
-resource "aws_security_group" "k3s_sg" {
-  name        = "k3s_security_group"
-  description = "Allow web and SSH traffic"
-  vpc_id      = aws_vpc.main_vpc.id
+module "db_security_group" {
+  source  = "terraform-aws-modules/security-group/aws"
+  version = "~> 5.0"
 
-  ingress {
-    description = "HTTPS"
-    from_port   = 443
-    to_port     = 443
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+  name        = "${local.name}-db-sg"
+  description = "Security group for RDS PostgreSQL"
+  vpc_id      = module.vpc.vpc_id
 
-  ingress {
-    description = "HTTP"
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    description = "SSH"
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"] 
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+  ingress_with_source_security_group_id = [
+    {
+      from_port                = 5432
+      to_port                  = 5432
+      protocol                 = "tcp"
+      description              = "PostgreSQL access from within EKS cluster"
+      source_security_group_id = module.eks.node_security_group_id
+    },
+  ]
 }
 
-resource "aws_instance" "k3s_node" {
-  ami           = "ami-0c7217cdde317cfec" # Canonical Ubuntu 22.04 LTS (us-east-1)
-  instance_type = "t2.micro"              # AWS Free Tier eligible
+module "db" {
+  source  = "terraform-aws-modules/rds/aws"
+  version = "~> 6.0"
+
+  identifier = "${local.name}-db"
+
+  engine               = "postgres"
+  engine_version       = "15"
+  family               = "postgres15"
+  major_engine_version = "15"
   
-  subnet_id                   = aws_subnet.public_subnet.id
-  vpc_security_group_ids      = [aws_security_group.k3s_sg.id]
-  associate_public_ip_address = true
+  # Free tier eligible DB instance type
+  instance_class       = "db.t3.micro"
 
-  user_data = <<-EOF
-              #!/bin/bash
-              apt-get update && apt-get upgrade -y
-              curl -sfL https://get.k3s.io | sh -s - server --disable traefik
-              EOF
+  allocated_storage     = 20
+  max_allocated_storage = 100
 
-  tags = { Name = "k3s-control-plane" }
+  db_name  = "student_db"
+  username = "student_admin"
+  port     = 5432
+
+  multi_az               = false
+  db_subnet_group_name   = module.vpc.database_subnet_group_name
+  vpc_security_group_ids = [module.db_security_group.security_group_id]
+
+  maintenance_window      = "Mon:00:00-Mon:03:00"
+  backup_window           = "03:00-06:00"
+  backup_retention_period = 1
+
+  # For development/learning purposes
+  skip_final_snapshot = true
+  deletion_protection = false
 }
 
-output "instance_ip" {
-  value = aws_instance.k3s_node.public_ip
+output "eks_cluster_endpoint" {
+  value = module.eks.cluster_endpoint
+}
+
+output "eks_cluster_name" {
+  value = module.eks.cluster_name
+}
+
+output "rds_endpoint" {
+  value = module.db.db_instance_endpoint
 }

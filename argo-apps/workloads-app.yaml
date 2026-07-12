@@ -8,7 +8,7 @@ spec:
   source:
     repoURL: 'https://github.com/SachinthaDaham/student-management-gitops.git'
     targetRevision: HEAD
-    path: environments/production
+    path: charts/student-management
   destination:
     server: 'https://kubernetes.default.svc'
     namespace: production

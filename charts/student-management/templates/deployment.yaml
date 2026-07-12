@@ -1,0 +1,54 @@
+{{- range $serviceName, $serviceData := .Values.services }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $serviceName }}
+  labels:
+    app: {{ $serviceName }}
+spec:
+  replicas: {{ $serviceData.replicas }}
+  selector:
+    matchLabels:
+      app: {{ $serviceName }}
+  template:
+    metadata:
+      labels:
+        app: {{ $serviceName }}
+    spec:
+      containers:
+      - name: {{ $serviceName }}
+        image: "{{ $.Values.image.repository }}/{{ $serviceName }}:{{ $.Values.image.tag }}"
+        ports:
+        - containerPort: {{ $serviceData.port }}
+        env:
+        - name: PORT
+          value: "{{ $serviceData.port }}"
+        - name: POSTGRES_HOST
+          valueFrom:
+            secretKeyRef:
+              name: db-secrets
+              key: POSTGRES_HOST
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: db-secrets
+              key: POSTGRES_USER
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: db-secrets
+              key: POSTGRES_PASSWORD
+        - name: POSTGRES_DB
+          valueFrom:
+            secretKeyRef:
+              name: db-secrets
+              key: POSTGRES_DB
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            cpu: 150m
+            memory: 128Mi
+{{- end }}
