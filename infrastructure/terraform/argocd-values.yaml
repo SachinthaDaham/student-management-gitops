@@ -1,0 +1,5 @@
+server:
+  ingress:
+    enabled: true
+    hosts:
+      - argocd.13.53.93.82.nip.io
