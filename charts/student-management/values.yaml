@@ -21,3 +21,15 @@ services:
 image:
   repository: 355878729662.dkr.ecr.eu-north-1.amazonaws.com/student-management-app
   tag: latest
+
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+  hosts:
+    - host: api.13.53.93.82.nip.io
+  tls:
+    - secretName: api-tls
+      hosts:
+        - api.13.53.93.82.nip.io
