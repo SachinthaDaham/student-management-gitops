@@ -4,3 +4,6 @@ server:
     ingressClassName: "nginx"
     hosts:
       - argocd.13.53.93.82.nip.io
+  configs:
+    params:
+      server.insecure: true
