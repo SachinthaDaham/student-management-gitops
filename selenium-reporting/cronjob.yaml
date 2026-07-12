@@ -11,21 +11,7 @@ spec:
         spec:
           containers:
           - name: selenium-reporter
-            image: python:3.9-slim
-            command:
-            - /bin/sh
-            - -c
-            - |
-              # This script simulates the selenium screenshot generation.
-              # In reality, this image should bundle selenium, headless chrome/firefox, and the python script.
-              echo "Starting Selenium job..."
-              apt-get update && apt-get install -y wget gnupg
-              # (Imagine chrome/webdriver installation here)
-              pip install selenium
-              echo "Capturing Grafana Dashboard screenshot..."
-              # python capture_report.py
-              echo "Sending report via email..."
-              echo "Report generation successful."
+            image: 355878729662.dkr.ecr.eu-north-1.amazonaws.com/student-management-app:reporter
             env:
             - name: GRAFANA_URL
               value: "http://kube-prometheus-stack-grafana.monitoring.svc.cluster.local"

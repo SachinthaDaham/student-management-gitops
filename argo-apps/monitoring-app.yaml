@@ -24,3 +24,19 @@ spec:
       selfHeal: true
     syncOptions:
       - CreateNamespace=true
+  ignoreDifferences:
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRole
+      name: kube-prometheus-stack-admission
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRoleBinding
+      name: kube-prometheus-stack-admission
+    - group: rbac.authorization.k8s.io
+      kind: Role
+      name: kube-prometheus-stack-admission
+    - group: rbac.authorization.k8s.io
+      kind: RoleBinding
+      name: kube-prometheus-stack-admission
+    - group: ""
+      kind: ServiceAccount
+      name: kube-prometheus-stack-admission
