@@ -18,7 +18,9 @@ spec:
     spec:
       containers:
       - name: {{ $serviceName }}
-        image: "{{ $.Values.image.repository }}/{{ $serviceName }}:{{ $.Values.image.tag }}"
+        image: "{{ $.Values.image.repository }}:{{ $.Values.image.tag }}"
+        workingDir: /app/services/{{ $serviceName }}
+        command: ["node", "src/index.js"]
         ports:
         - containerPort: {{ $serviceData.port }}
         env:
