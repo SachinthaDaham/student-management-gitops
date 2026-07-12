@@ -46,6 +46,10 @@ spec:
             secretKeyRef:
               name: db-secrets
               key: POSTGRES_DB
+{{- range $otherServiceName, $otherServiceData := $.Values.services }}
+        - name: {{ $otherServiceName | upper | replace "-" "_" }}_URL
+          value: "http://{{ $otherServiceName }}:{{ $otherServiceData.port }}"
+{{- end }}
         resources:
           requests:
             cpu: 50m

@@ -129,3 +129,23 @@ output "eks_cluster_name" {
 output "rds_endpoint" {
   value = module.db.db_instance_endpoint
 }
+
+module "cluster_autoscaler_irsa_role" {
+  source  = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
+  version = "~> 5.0"
+
+  role_name                        = "cluster-autoscaler-${local.name}"
+  attach_cluster_autoscaler_policy = true
+  cluster_autoscaler_cluster_names = [module.eks.cluster_name]
+
+  oidc_providers = {
+    ex = {
+      provider_arn               = module.eks.oidc_provider_arn
+      namespace_service_accounts = ["kube-system:cluster-autoscaler"]
+    }
+  }
+}
+
+output "cluster_autoscaler_iam_role_arn" {
+  value = module.cluster_autoscaler_irsa_role.iam_role_arn
+}

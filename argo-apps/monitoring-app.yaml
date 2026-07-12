@@ -33,6 +33,34 @@ spec:
         prometheus:
           prometheusSpec:
             serviceMonitorSelectorNilUsesHelmValues: false
+        alertmanager:
+          config:
+            global:
+              resolve_timeout: 5m
+            route:
+              group_by: ['job']
+              group_wait: 30s
+              group_interval: 5m
+              repeat_interval: 12h
+              receiver: 'discord-webhook'
+            receivers:
+            - name: 'discord-webhook'
+              slack_configs:
+              - api_url: 'https://discord.com/api/webhooks/dummy/dummy'
+                send_resolved: true
+        additionalPrometheusRulesMap:
+          rule-name:
+            groups:
+              - name: microservice-alerts
+                rules:
+                  - alert: MicroserviceDown
+                    expr: up{namespace="production"} == 0
+                    for: 1m
+                    labels:
+                      severity: critical
+                    annotations:
+                      summary: "Microservice {{ $labels.app }} is down"
+                      description: "The microservice {{ $labels.app }} in namespace {{ $labels.namespace }} has been down for more than 1 minute."
   destination:
     server: 'https://kubernetes.default.svc'
     namespace: monitoring

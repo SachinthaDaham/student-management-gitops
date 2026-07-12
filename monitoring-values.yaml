@@ -1,0 +1,21 @@
+grafana:
+  adminPassword: "prom-operator"
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    annotations:
+      cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    hosts:
+      - grafana.13.53.93.82.nip.io
+    tls:
+      - secretName: grafana-tls
+        hosts:
+          - grafana.13.53.93.82.nip.io
+  additionalDataSources:
+    - name: Loki
+      type: loki
+      url: http://loki-stack.monitoring.svc.cluster.local:3100
+      access: proxy
+prometheus:
+  prometheusSpec:
+    serviceMonitorSelectorNilUsesHelmValues: false
