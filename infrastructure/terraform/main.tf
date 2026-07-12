@@ -70,6 +70,12 @@ module "eks" {
   }
 
   enable_cluster_creator_admin_permissions = true
+
+  cluster_addons = {
+    aws-ebs-csi-driver = {
+      service_account_role_arn = module.ebs_csi_irsa_role.iam_role_arn
+    }
+  }
 }
 
 module "db_security_group" {
@@ -155,4 +161,19 @@ module "cluster_autoscaler_irsa_role" {
 
 output "cluster_autoscaler_iam_role_arn" {
   value = module.cluster_autoscaler_irsa_role.iam_role_arn
+}
+
+module "ebs_csi_irsa_role" {
+  source  = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
+  version = "~> 5.0"
+
+  role_name             = "ebs-csi-${local.name}"
+  attach_ebs_csi_policy = true
+
+  oidc_providers = {
+    ex = {
+      provider_arn               = module.eks.oidc_provider_arn
+      namespace_service_accounts = ["kube-system:ebs-csi-controller-sa"]
+    }
+  }
 }
