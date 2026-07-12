@@ -59,6 +59,13 @@ module "eks" {
 
       # Upgraded instance type to allow more pods
       instance_types = ["t3.medium"]
+
+      # Best practice: Enforce IMDSv2 to protect against SSRF
+      metadata_options = {
+        http_endpoint               = "enabled"
+        http_tokens                 = "required"
+        http_put_response_hop_limit = 1
+      }
     }
   }
 

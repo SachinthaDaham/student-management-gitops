@@ -16,13 +16,33 @@ spec:
       labels:
         app: {{ $serviceName }}
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
       containers:
       - name: {{ $serviceName }}
+        securityContext:
+          readOnlyRootFilesystem: false
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
         image: "{{ $.Values.image.repository }}:{{ $.Values.image.tag }}"
         workingDir: /app/services/{{ $serviceName }}
         command: ["node", "src/index.js"]
         ports:
         - containerPort: {{ $serviceData.port }}
+        livenessProbe:
+          tcpSocket:
+            port: {{ $serviceData.port }}
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        readinessProbe:
+          tcpSocket:
+            port: {{ $serviceData.port }}
+          initialDelaySeconds: 5
+          periodSeconds: 10
         env:
         - name: PORT
           value: "{{ $serviceData.port }}"
