@@ -1,0 +1,30 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: jaeger
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
+spec:
+  project: default
+  source:
+    repoURL: 'https://jaegertracing.github.io/helm-charts'
+    targetRevision: 0.71.18
+    chart: jaeger
+    helm:
+      values: |
+        provisionDataStore:
+          cassandra: false
+        allInOne:
+          enabled: true
+        storage:
+          type: memory
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: observability
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
