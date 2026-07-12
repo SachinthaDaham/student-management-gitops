@@ -53,12 +53,12 @@ module "eks" {
 
   eks_managed_node_groups = {
     app_nodes = {
-      min_size     = 1
-      max_size     = 2
-      desired_size = 1
+      min_size     = 2
+      max_size     = 3
+      desired_size = 2
 
-      # Free tier eligible instance type in eu-north-1
-      instance_types = ["t3.micro"]
+      # Upgraded instance type to allow more pods
+      instance_types = ["t3.medium"]
     }
   }
 
