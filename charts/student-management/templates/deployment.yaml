@@ -52,22 +52,22 @@ spec:
         - name: POSTGRES_HOST
           valueFrom:
             secretKeyRef:
-              name: db-secrets
+              name: db-secrets-aws
               key: POSTGRES_HOST
         - name: POSTGRES_USER
           valueFrom:
             secretKeyRef:
-              name: db-secrets
+              name: db-secrets-aws
               key: POSTGRES_USER
         - name: POSTGRES_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: db-secrets
+              name: db-secrets-aws
               key: POSTGRES_PASSWORD
         - name: POSTGRES_DB
           valueFrom:
             secretKeyRef:
-              name: db-secrets
+              name: db-secrets-aws
               key: POSTGRES_DB
 {{- range $otherServiceName, $otherServiceData := $.Values.services }}
         - name: {{ $otherServiceName | upper | replace "-" "_" }}_URL
