@@ -30,7 +30,7 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: {{ $fullName }}-{{ $serviceName }}
+                name: {{ $serviceName }}
                 port:
                   number: {{ $serviceData.port }}
           {{- end }}
