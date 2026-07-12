@@ -19,5 +19,5 @@ services:
     replicas: 2
 
 image:
-  repository: docker.io/username
+  repository: 355878729662.dkr.ecr.eu-north-1.amazonaws.com/student-management-app
   tag: latest

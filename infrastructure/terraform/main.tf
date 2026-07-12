@@ -53,9 +53,9 @@ module "eks" {
 
   eks_managed_node_groups = {
     app_nodes = {
-      min_size     = 2
-      max_size     = 3
-      desired_size = 2
+      min_size     = 3
+      max_size     = 4
+      desired_size = 3
 
       # Upgraded instance type to allow more pods
       instance_types = ["t3.medium"]
